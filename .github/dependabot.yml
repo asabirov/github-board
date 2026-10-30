@@ -1,0 +1,43 @@
+# Half of #711's last Done-when item: "the next drift of this size is visible
+# before it is 28 releases deep."
+#
+# It got 28 releases and FOUR majors deep — 41 and seven by the time anyone
+# worked it — for one reason with no villain in it: `"@octocat/ui": "^0.16.0"`,
+# and a caret cannot cross a major. `pnpm install` was never going to move board
+# off 0.16.x, so nothing in the ordinary loop of building and merging could ever
+# report the gap. Nobody ignored a signal. There was no signal.
+#
+# This is the signal. Dependabot opens a pull request the week a new major
+# ships, so the gap ARRIVES rather than waiting to be looked for, and the diff
+# in front of you is one major wide instead of seven.
+#
+# WHAT IT COSTS. A PR a week per ecosystem, most of them a lockfile line. The
+# failure mode it has instead of silence is a stale major-bump PR sitting open
+# and ignored — which is the same drift wearing a PR number. That is what the
+# "Kit drift" step in `workflows/ci.yml` is for: it counts the gap in published
+# RELEASES on every run and goes red at two minor lines behind, so an ignored PR
+# cannot become another 0.16.0. It counted MAJORS until PR #794's review, and a
+# major count answers 0 for `0.16.0` against `0.20.0` — the release that deleted
+# `SignInScreen` — so the claim in this paragraph was not true when it was
+# written.
+#
+# Security ALERTS are already on for this repo and are a different thing: they
+# fire on a CVE, never on a major nobody took.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /board-frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /board-service
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  # The workflows themselves pin actions by major (`actions/checkout@v4`), which
+  # is the same shape of pin as the one that stranded board on 0.16.0.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

@@ -1,0 +1,8 @@
+/src/generated/prisma/
+
+# The temporary dist `naming-settings-boot.spec.ts` compiles into, beside the
+# package so `tsc -p tsconfig.build.json` resolves the same way it does in CI.
+# `afterAll` removes it; an interrupt or a failed `tsc` does not, and a few
+# hundred loose `.js` files under the package are otherwise stageable by
+# `git add -A`.
+/.naming-boot-*/

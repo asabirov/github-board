@@ -1,0 +1,605 @@
+{
+  "/api/repos": {
+    "status": 200,
+    "body": {
+      "updatedAt": "2026-08-06T14:39:21.663Z",
+      "unreadableOrgs": [],
+      "driOptionsByOrg": {
+        "acme": [
+          "octocat",
+          "hubot",
+          "monalisa"
+        ]
+      },
+      "driOptions": [
+        "octocat",
+        "hubot",
+        "monalisa"
+      ],
+      "ownerWritability": "writable",
+      "repos": [
+        {
+          "full": "acme/github-board",
+          "name": "github-board",
+          "key": "board",
+          "htmlUrl": "https://github.com/acme/github-board",
+          "description": "This board",
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 1,
+              "closed": 0
+            },
+            {
+              "opened": 3,
+              "closed": 0
+            }
+          ],
+          "open": 5,
+          "owner": {
+            "login": "octocat",
+            "name": "Octocat"
+          },
+          "ownerState": "read",
+          "language": "TypeScript",
+          "pushedAt": "2026-08-05T14:39:21.663Z"
+        },
+        {
+          "full": "acme/acme",
+          "name": "acme",
+          "key": "acme",
+          "htmlUrl": "https://github.com/acme/acme",
+          "description": "The product",
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 1,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 3,
+              "closed": 0
+            },
+            {
+              "opened": 1,
+              "closed": 0
+            },
+            {
+              "opened": 1,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 4,
+              "closed": 0
+            }
+          ],
+          "open": 10,
+          "owner": {
+            "login": "hubot",
+            "name": null
+          },
+          "ownerState": "read",
+          "language": "TypeScript",
+          "pushedAt": "2026-08-06T09:51:21.663Z"
+        },
+        {
+          "full": "acme/acme-mail-extension-app",
+          "name": "acme-mail-extension-app",
+          "key": "acme-mail-extension-app",
+          "htmlUrl": "https://github.com/acme/acme-mail-extension-app",
+          "description": null,
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            }
+          ],
+          "open": 0,
+          "owner": null,
+          "ownerState": "read",
+          "language": "TypeScript",
+          "pushedAt": "2026-06-29T14:39:21.663Z"
+        },
+        {
+          "full": "acme/acme-platform-billing",
+          "name": "acme-platform-billing",
+          "key": "acme-platform-billing",
+          "htmlUrl": "https://github.com/acme/acme-platform-billing",
+          "description": "Metering and invoices",
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            }
+          ],
+          "open": 0,
+          "owner": {
+            "login": "hubot",
+            "name": null
+          },
+          "ownerState": "read",
+          "language": "TypeScript",
+          "pushedAt": "2026-08-02T14:39:21.663Z"
+        },
+        {
+          "full": "acme/acme-platform-deploy",
+          "name": "acme-platform-deploy",
+          "key": "acme-platform-deploy",
+          "htmlUrl": "https://github.com/acme/acme-platform-deploy",
+          "description": null,
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            }
+          ],
+          "open": 0,
+          "owner": {
+            "login": "monalisa",
+            "name": null
+          },
+          "ownerState": "read",
+          "language": "Go",
+          "pushedAt": "2026-07-26T14:39:21.663Z"
+        },
+        {
+          "full": "acme/acme-realtime-gateway",
+          "name": "acme-realtime-gateway",
+          "key": "acme-realtime-gateway",
+          "htmlUrl": "https://github.com/acme/acme-realtime-gateway",
+          "description": "Sockets and presence",
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            }
+          ],
+          "open": 0,
+          "owner": {
+            "login": "hubot",
+            "name": null
+          },
+          "ownerState": "read",
+          "language": "Go",
+          "pushedAt": "2026-08-03T14:39:21.663Z"
+        },
+        {
+          "full": "acme/roadmap",
+          "name": "roadmap",
+          "key": "roadmap",
+          "htmlUrl": "https://github.com/acme/roadmap",
+          "description": "Cycle plans",
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            }
+          ],
+          "open": 0,
+          "owner": {
+            "login": "octocat",
+            "name": "Octocat"
+          },
+          "ownerState": "read",
+          "language": null,
+          "pushedAt": "2026-03-27T14:39:21.663Z"
+        },
+        {
+          "full": "acme/status",
+          "name": "status",
+          "key": "status",
+          "htmlUrl": "https://github.com/acme/status",
+          "description": null,
+          "weeks": [
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            },
+            {
+              "opened": 0,
+              "closed": 0
+            }
+          ],
+          "open": 0,
+          "owner": null,
+          "ownerState": "read",
+          "language": null,
+          "pushedAt": "2026-07-31T14:39:21.663Z"
+        }
+      ]
+    }
+  },
+  "/api/repos/health": {
+    "status": 200,
+    "body": {
+      "repos": [
+        {
+          "full": "acme/acme",
+          "security": {
+            "state": "read",
+            "depHigh": 6,
+            "depModerate": 3,
+            "codeScanning": 4,
+            "secrets": 0,
+            "secretsUrl": null
+          },
+          "ci": "success",
+          "ciUrl": "https://github.com/acme/acme/actions/runs/9001"
+        },
+        {
+          "full": "acme/github-board",
+          "security": {
+            "state": "read",
+            "depHigh": 0,
+            "depModerate": 1,
+            "codeScanning": 2,
+            "secrets": 0,
+            "secretsUrl": null
+          },
+          "ci": "success",
+          "ciUrl": "https://github.com/acme/github-board/actions/runs/9002"
+        },
+        {
+          "full": "acme/acme-platform-billing",
+          "security": {
+            "state": "read",
+            "depHigh": 0,
+            "depModerate": 0,
+            "codeScanning": 0,
+            "secrets": 1,
+            "secretsUrl": "https://github.com/acme/acme-platform-billing/security/secret-scanning/3"
+          },
+          "ci": "success",
+          "ciUrl": "https://github.com/acme/acme-platform-billing/actions/runs/9003"
+        },
+        {
+          "full": "acme/acme-platform-deploy",
+          "security": {
+            "depHigh": 0,
+            "depModerate": 0,
+            "codeScanning": 0,
+            "secrets": 0,
+            "secretsUrl": null,
+            "state": "read"
+          },
+          "ci": "failure",
+          "ciUrl": "https://github.com/acme/acme-platform-deploy/actions/runs/9004"
+        },
+        {
+          "full": "acme/acme-mail-extension-app",
+          "security": {
+            "depHigh": 0,
+            "depModerate": 0,
+            "codeScanning": 0,
+            "secrets": 0,
+            "secretsUrl": null,
+            "state": "read"
+          },
+          "ci": "success",
+          "ciUrl": "https://github.com/acme/acme-mail-extension-app/actions/runs/9005"
+        },
+        {
+          "full": "acme/roadmap",
+          "security": {
+            "depHigh": 0,
+            "depModerate": 0,
+            "codeScanning": 0,
+            "secrets": 0,
+            "secretsUrl": null,
+            "state": "read"
+          },
+          "ci": "success",
+          "ciUrl": "https://github.com/acme/roadmap/actions/runs/9006"
+        },
+        {
+          "full": "acme/acme-realtime-gateway",
+          "security": {
+            "depHigh": 0,
+            "depModerate": 0,
+            "codeScanning": 0,
+            "secrets": 0,
+            "secretsUrl": null,
+            "state": "read"
+          },
+          "ci": "timed_out",
+          "ciUrl": null
+        },
+        {
+          "full": "acme/status",
+          "security": {
+            "depHigh": 0,
+            "depModerate": 0,
+            "codeScanning": 0,
+            "secrets": 0,
+            "secretsUrl": null,
+            "state": "read"
+          },
+          "ci": null,
+          "ciUrl": null
+        }
+      ],
+      "unreadableOrgs": []
+    }
+  },
+  "/api/sync/sources": {
+    "status": 200,
+    "body": {
+      "sources": {
+        "issues": {
+          "syncedAt": "2026-08-06T14:39:21.663Z"
+        },
+        "issueBuckets": {
+          "syncedAt": "2026-08-06T14:39:21.663Z"
+        },
+        "projects": {
+          "syncedAt": "2026-08-06T14:39:21.663Z"
+        },
+        "repos": {
+          "syncedAt": "2026-08-06T14:39:21.663Z"
+        }
+      }
+    }
+  }
+}

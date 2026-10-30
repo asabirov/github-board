@@ -1,0 +1,168 @@
+/* Made by design/build.mjs from design/DESIGN.md. Do not edit by hand. */
+
+:root {
+  --font-display: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14.5px;
+  --text-md: 15.5px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 30px;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --leading-tight: 1.2;
+  --leading-snug: 1.4;
+  --leading-normal: 1.62;
+  --tracking-tight: -0.01em;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-xs: 6px;
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-pill: 999px;
+  --container: 1120px;
+  --panel-sm: 320px;
+  --ring: 2px solid var(--accent);
+  --ring-offset: 1px;
+  --dur-med: 250ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root,
+:root[data-theme="dark"] {
+  --bg: #0e0d14;
+  --surface: #211e2d;
+  --surface-2: #161520;
+  --surface-3: #2d293c;
+  --bg-elevated: #2a2639;
+  --border: #332f45;
+  --border-strong: #453f5c;
+  --card-edge: var(--border);
+  --float-edge: var(--border-strong);
+  --float-edge-inner: var(--border);
+  --control-edge: var(--border);
+  --text: #e9e7f0;
+  --strong: #ffffff;
+  --dim: #c6c2d6;
+  --muted: #a29db6;
+  --green: #98ff8f;
+  --pink: #e97ca5;
+  --amber: #ffcf6a;
+  --cyan: #20dcf5;
+  --chip-success-ink: #98ff8f;
+  --chip-success-fill: rgba(152, 255, 143, 0.16);
+  --chip-warn-ink: #ffcf6a;
+  --chip-warn-fill: color-mix(in srgb, #ffcf6a 15%, transparent);
+  --chip-danger-ink: #f5aec6;
+  --chip-danger-fill: rgba(233, 124, 165, 0.16);
+  --chip-info-ink: #20dcf5;
+  --chip-info-fill: rgba(32, 220, 245, 0.14);
+  --chip-neutral-fill: color-mix(in srgb, #a29db6 12%, transparent);
+  --control-knob: #ffffff;
+  --signal-contrast: #0c0c0c;
+  --signal-solid-ink: #0c0c0c;
+  --signal-solid-danger: #e97ca5;
+  --shadow-ink: #000000;
+  --elev-rest: 0 0 #0000;
+  --elev-drop: 0 14px 30px -12px color-mix(in srgb, var(--shadow-ink) 62%, transparent), 0 3px 9px -4px color-mix(in srgb, var(--shadow-ink) 50%, transparent);
+  color-scheme: dark;
+  --accent: #b479ff;
+  --accent-strong: #7c3aed;
+  --accent-contrast: #ffffff;
+}
+
+:root[data-theme="light"] {
+  --bg: #f2f3f6;
+  --surface: #ffffff;
+  --surface-2: #e9ecf3;
+  --surface-3: #eef0f5;
+  --bg-elevated: #ffffff;
+  --border: #e4e7ee;
+  --border-strong: #cdd2dc;
+  --card-edge: color-mix(in srgb, var(--border) 50%, var(--border-strong));
+  --float-edge: color-mix(in srgb, var(--border) 50%, var(--border-strong));
+  --float-edge-inner: transparent;
+  --control-edge: var(--border-strong);
+  --text: #1a1e27;
+  --strong: #0c0e13;
+  --dim: #3a404b;
+  --muted: #5c6270;
+  --green: #1c8a2c;
+  --pink: #a92d59;
+  --amber: #b5730a;
+  --cyan: #0c8fa8;
+  --chip-success-ink: #145a26;
+  --chip-success-fill: #dff3e4;
+  --chip-warn-ink: #825900;
+  --chip-warn-fill: #fbedd2;
+  --chip-danger-ink: #b7295f;
+  --chip-danger-fill: #fbe0ea;
+  --chip-info-ink: #096a7c;
+  --chip-info-fill: #ddeff3;
+  --chip-neutral-fill: color-mix(in srgb, #5c6270 13%, transparent);
+  --control-knob: #ffffff;
+  --signal-contrast: #0c0c0c;
+  --signal-solid-ink: #ffffff;
+  --signal-solid-danger: #b7295f;
+  --shadow-ink: #1e1e32;
+  --elev-rest: 0 2px 6px -1px color-mix(in srgb, var(--shadow-ink) 6%, transparent), 0 1px 3px -1px color-mix(in srgb, var(--shadow-ink) 4%, transparent);
+  --elev-drop: 0 12px 32px -12px color-mix(in srgb, var(--shadow-ink) 16%, transparent), 0 1px 8px -3px color-mix(in srgb, var(--shadow-ink) 9%, transparent);
+  color-scheme: light;
+  --accent: #6a2dcc;
+  --accent-strong: #6a2dcc;
+  --accent-contrast: #ffffff;
+}
+
+:root[data-accent="phoenix"],
+:root[data-theme="dark"][data-accent="phoenix"] {
+  --accent: #ff6a3d;
+  --accent-strong: var(--accent);
+  --accent-contrast: #241006;
+}
+
+:root[data-theme="light"][data-accent="phoenix"] {
+  --accent: #a8370c;
+  --accent-strong: var(--accent);
+  --accent-contrast: #ffffff;
+}
+
+:root[data-accent="ocean"],
+:root[data-theme="dark"][data-accent="ocean"] {
+  --accent: #3b9dff;
+  --accent-strong: var(--accent);
+  --accent-contrast: #04121f;
+}
+
+:root[data-theme="light"][data-accent="ocean"] {
+  --accent: #005ab4;
+  --accent-strong: var(--accent);
+  --accent-contrast: #ffffff;
+}
+
+:root[data-accent="emerald"],
+:root[data-theme="dark"][data-accent="emerald"] {
+  --accent: #16c98a;
+  --accent-strong: var(--accent);
+  --accent-contrast: #04180f;
+}
+
+:root[data-theme="light"][data-accent="emerald"] {
+  --accent: #076c48;
+  --accent-strong: var(--accent);
+  --accent-contrast: #ffffff;
+}

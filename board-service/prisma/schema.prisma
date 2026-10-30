@@ -1,0 +1,418 @@
+// board-service/prisma/schema.prisma
+//
+// Issues and projects are read through from GitHub. The cross-system identity
+// table (email ↔ GitHub ↔ ClickUp) has no external source of truth; it
+// lived in a hand-edited file (people-aliases.ts). It now lives here so admins
+// can edit it in the Access panel without a PR (#11 follow-up). The Postgres
+// container was already in the compose stack; `prisma migrate deploy` runs on boot.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Cross-system identity for one person. The Google group stays the source of
+/// truth for WHO is on the team; this maps a rostered person (matched by any of
+/// their `emails`) to their GitHub / ClickUp handles. A group member with no
+/// Identity row still appears on the roster with a derived name — they just have
+/// no linked handles until an admin fills them in.
+model Identity {
+  id            String   @id @default(cuid())
+  displayName   String
+  /// All addresses this person appears under (group + personal). Lowercased.
+  /// The join key to the roster. Nothing here enforces that an address appears
+  /// on only one row — Postgres cannot make an array column unique this way — so
+  /// readers must not assume it. `handleForEmail` orders by `updatedAt` and takes
+  /// the first match precisely because two rows can claim one address.
+  emails        String[]
+  githubLogin   String?
+  /// ClickUp numeric user id — enables a best-effort ClickUp link.
+  clickupUserId String?
+  /// DRI names as they appear in ClickUp (kept for legacy name-matching).
+  clickupNames  String[]
+  /// Board-assigned role (#332): 'admin' | 'writer' | 'reader', or null to fall
+  /// back to the derived default (writer if a GitHub login is linked, else
+  /// reader). Authoritative — an 'admin' role grants real board admin. Decoupled
+  /// from the GitHub sign-in allow list; the allow list is used only for admission.
+  role          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// A user-minted personal access token (#210). The secret is shown once at
+/// creation and NEVER stored — only its SHA-256 hash lives here, so a DB leak
+/// yields no usable tokens. Presented as `Authorization: Bearer board_pat_…`;
+/// the auth guard hashes the bearer, looks up an un-revoked, un-expired row, and
+/// resolves the owner + scopes so the normal scope guard gates it (REST + MCP).
+model PersonalToken {
+  id         String    @id @default(cuid())
+  /// Lowercased GitHub login of the human who minted it — the actor the token acts as.
+  ownerEmail String
+  /// GitHub user id of the session that minted it — the STABLE identity behind
+  /// the login above. A login can be renamed; the user id cannot.
+  /// Null on rows minted before #892: those keep every board-local scope and are
+  /// refused the Github-backed surfaces, because nothing on them says which
+  /// person's grant they would be reaching for.
+  ownerSub   String?
+  /// User-facing label (e.g. "my-laptop-agent").
+  name       String
+  /// Granted board:* scopes — a subset of the owner's own authority.
+  scopes     String[]
+  /// SHA-256 hex of the secret. Unique so a lookup is a single indexed hit.
+  tokenHash  String    @unique
+  /// First chars of the secret (e.g. "board_pat_9f3a") for list display only.
+  prefix     String
+  /// Null = never expires. Otherwise the token is rejected past this instant.
+  expiresAt  DateTime?
+  /// Best-effort last-use stamp (bumped async by the guard).
+  lastUsedAt DateTime?
+  /// Set when the owner revokes it; a revoked token is rejected thereafter.
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([ownerEmail])
+}
+
+/// Append-only audit trail (#212): who did what, across board's write + governance
+/// actions (identity edits, token mint/revoke, admin agent kill-switch, feedback).
+/// Read-only in the admin hub; recording is best-effort so a failed audit write
+/// never fails the underlying action.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  /// When it happened.
+  at         DateTime @default(now())
+  /// Lowercased email of the human who performed the action.
+  actorEmail String
+  /// Machine action key, e.g. `token.mint` / `agent.revoke` / `identity.upsert`.
+  action     String
+  /// Human-readable one-line summary shown in the log.
+  summary    String
+  /// Coarse target kind (`token` / `agent` / `identity` / `feedback`), or null.
+  targetType String?
+  /// The target's identifier (token id, owner email, issue number), or null.
+  targetId   String?
+
+  @@index([at])
+  @@index([actorEmail])
+  @@index([action])
+}
+
+/// One durable OAuth2 authorization for board's MCP server (#456): this person
+/// let this client act for them, at these scopes, on this date. It is the thing a
+/// person revokes in the account area, so it has to survive a restart and stay
+/// stable across a refresh — which is why the grant is keyed on its own id and
+/// not on a token's `jti`, since every refresh mints a new one. No relations and
+/// no foreign keys, matching the rest of this schema; the child rows below carry
+/// a plain `grantId` and revocation sweeps them explicitly.
+model McpGrant {
+  id                 String    @id @default(cuid())
+  /// GitHub user id of the person who authorized it.
+  sub                String
+  email              String
+  /// The OAuth client id this grant belongs to.
+  clientId           String
+  /// The board:* scopes consented to, re-capped on every refresh.
+  scopes             String[]
+  /// The one refresh token that may be redeemed for this grant. Rotation is a
+  /// compare-and-swap on this column, so the invariant is structural rather than
+  /// swept into existence by two writers racing. Null once the grant is revoked.
+  currentRefreshHash String?
+  createdAt          DateTime  @default(now())
+  /// Stamped by the refresh path only — deliberately not "last used". The auth
+  /// guard's read is one primary-key lookup and a write there would double it.
+  lastRefreshedAt    DateTime?
+  /// The revocation receipt. Set before the child rows are swept, so a mint that
+  /// races a sign-out re-reads this and finds itself revoked.
+  revokedAt          DateTime?
+
+  @@index([sub])
+}
+
+/// One issued MCP access token, keyed on the `jti` the caller minted before
+/// signing. Many rows to one grant — every refresh adds another. The auth guard
+/// resolves an MCP JWT through exactly one primary-key read on this table, which
+/// is why `revokedAt` is denormalized down from the grant rather than joined:
+/// revoking a grant writes it onto every child row, so the guard never needs a
+/// second query and never reads McpGrant at all.
+model McpAccessToken {
+  jti       String    @id
+  grantId   String
+  expiresAt DateTime
+  /// Copied down from the grant on revocation (see above), or set directly when
+  /// a single token is revoked through RFC 7009.
+  revokedAt DateTime?
+
+  @@index([grantId])
+  @@index([expiresAt])
+}
+
+/// One refresh token, keyed on the sha256 hex of the value — the value itself is
+/// never stored, so a database leak yields nothing redeemable. This table is
+/// history rather than a liveness check: whether a token may be redeemed is
+/// decided by `McpGrant.currentRefreshHash`, and a row here that is no longer the
+/// pointer belongs to a token its holder already spent.
+model McpRefreshToken {
+  tokenHash  String    @id
+  grantId    String
+  expiresAt  DateTime
+  /// When its holder spent it. Stamped once and never re-stamped, so it records
+  /// the first redemption rather than the latest write. Rotation never sets
+  /// `revokedAt`, which on this table means a family kill or a sign-out.
+  replacedAt DateTime?
+  /// Explicit revocation only — a family kill or a sign-out, never a rotation.
+  revokedAt  DateTime?
+
+  @@index([grantId])
+  @@index([expiresAt])
+}
+
+/// An OAuth client registered through dynamic client registration (#456).
+/// It lives here rather than in process memory because board restarts on every
+/// merge, and the SDK's token handler answers `invalid_client` when a
+/// registration is gone — so an in-memory registry meant every deploy forced
+/// every connected client back through a full interactive authorization.
+///
+/// No secret column, and that is deliberate rather than an omission. Every
+/// client board registers is normalized to public on the way in: MCP clients are
+/// desktop applications, OAuth 2.1 already requires PKCE of them for the reason
+/// that such a client cannot keep a secret, and handing one out would be theatre
+/// that also has to be stored. Nothing stored is nothing to leak.
+model McpClient {
+  clientId     String   @id
+  /// The client's self-chosen name. A stranger's text — never logged.
+  clientName   String?
+  redirectUris String[]
+  /// The registration as the SDK formed it, which is what `getClient` returns.
+  metadata     Json
+  createdAt    DateTime @default(now())
+}
+
+/// An authorization in flight: the client asked, and the person has not answered
+/// yet (#456). Consumed by the consent decision, and dead after
+/// `PENDING_TTL_MS` whether or not anybody comes back for it.
+model McpPendingAuth {
+  id              String   @id
+  clientId        String
+  /// Where the code goes — the record's own address, never the registration's
+  /// list, since a registration may name several.
+  redirectUri     String
+  codeChallenge   String
+  state           String?
+  requestedScopes String[]
+  /// SHA-256 hex of the secret held by the browser that started this flow
+  /// (#554), never the secret. Optional, and a record carrying none is refused
+  /// by the consent screen rather than answerable by everybody.
+  initiatorHash   String?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// A one-time authorization code, keyed on the sha256 hex of the value (#456).
+/// The code itself is handed to the client once and never stored. `createdAt` is
+/// read on every lookup: a code that leaked and was never redeemed has to stop
+/// being redeemable at `CODE_TTL_MS`, not never.
+model McpAuthCode {
+  codeHash      String   @id
+  clientId      String
+  redirectUri   String
+  codeChallenge String
+  scopes        String[]
+  sub           String
+  email         String
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// One signed-out session, keyed on the `jti` of the JWT that carried it (#679).
+/// The sign-out denylist used to be a process-local `Map`, and since #677 raised
+/// the session lifetime to seven days while board redeploys on nearly every
+/// merge, a restart handed a captured cookie the rest of that week back. This
+/// table is the same shape `McpAccessToken` already uses for the same reason: one
+/// primary-key read answers the guard, so the check costs one row lookup.
+model RevokedSession {
+  jti       String   @id
+  /// When the row stops mattering — the token's own expiry, clamped to
+  /// SESSION_TTL_MS by the caller so an unverified `exp` claim cannot lodge a row
+  /// no prune ever reaches. Rows past it are deleted opportunistically on revoke.
+  expiresAt DateTime
+  revokedAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+/// The instant before which every session of one person is dead (#679), keyed on
+/// the GitHub user id. Sign-out bumps it, which kills EVERY session that person
+/// holds rather than only the cookie presented — the case a per-jti denylist
+/// cannot express is "a copy of my cookie was taken before I signed out", and
+/// there is no jti to name for a session nobody enumerated. One row per person,
+/// so the table is bounded by headcount rather than by sign-out count.
+model SessionEpoch {
+  sub       String   @id
+  /// Sessions whose `iat` is before this are refused. Compared as
+  /// `iat * 1000 < notBefore.getTime()`.
+  notBefore DateTime
+  updatedAt DateTime @updatedAt
+}
+
+/// Reversible secrets for one sign-in, keyed on the stable GitHub user id.
+model GithubCredential {
+  ownerEmail String @id
+  boardSub String
+  githubUserId String @unique
+  githubLogin String
+  accessCipher String
+  refreshCipher String
+  accessExpiresAt DateTime
+  refreshExpiresAt DateTime
+  scopes String
+  version String
+  refreshLeaseUntil DateTime?
+  // The issue time of the newest sign-in seal this row has already admitted
+  // (#892 review, C1). A sign-in seal carries no version to swap on, so this
+  // is what makes one single-use: a seal is admitted only while it is strictly
+  // newer than this, and admitting it moves the mark forward. One slot, and
+  // correct across interleaved flows, because the test is an ordering rather
+  // than an equality. Only an admitted completion writes it.
+  signInAdmittedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// The four models below are the Github webhook store (#1007, V5). They are
+// written and read only through GITHUB_STORE_DATABASE_URL, a Postgres of their
+// own, and never in the database DATABASE_URL names: both databases carry the
+// whole schema, and each writes only its own tables, and a boot that finds the
+// two URLs equal refuses rather than starting. Everything in them can be
+// rebuilt from Github, because every read the store answers falls back to
+// Github when the store cannot answer it.
+
+/// One Github App webhook delivery the store accepted, keyed on the
+/// `X-GitHub-Delivery` id Github stamps on it. The same delivery can arrive
+/// again, when somebody presses Redeliver in the App's settings or calls the
+/// redeliver endpoint. This row and the changes its delivery makes are written
+/// in one transaction, so a second copy finds its id here and changes nothing,
+/// and a copy whose changes failed leaves no id behind to block the retry. The
+/// receiver deletes rows older than a week.
+model GithubWebhookDelivery {
+  id             String   @id
+  event          String
+  action         String?
+  installationId BigInt?
+  repositoryId   BigInt?
+  receivedAt     DateTime @default(now())
+
+  @@index([receivedAt])
+}
+
+/// One Github issue, as the newest event or Github read that reached the store
+/// left it. Keyed on the repository's id and the issue number, never on the
+/// repository's name: a renamed repository keeps its id, and a new repository
+/// that takes an old name gets a new one, so neither inherits the other's
+/// issues. `updatedAt` is Github's own `updated_at`, and a write lands only when
+/// it is at least that new, so a delivery that arrives late cannot put an older
+/// state back. `issue` holds what the ingest reads and no issue body. `deleted`
+/// marks an issue deleted or transferred away, and is never lifted, because
+/// Github does not reuse an issue number in a repository. `writtenAt` is when
+/// the store last wrote the row. A full Github read of the repository that does
+/// not list a row written before it began sets `missedAt`, and the next full
+/// read that also misses it deletes it, which is how an issue deleted during a
+/// missed delivery leaves. One miss is not enough, because Github's paged list
+/// can skip a live issue when another is deleted between two pages. Every write
+/// clears `missedAt`. `owner` is the lowercased login of the repository the row
+/// belongs to, so an uninstall can forget every row of an account, including
+/// rows of repositories no full read ever reached.
+model GithubStoredIssue {
+  repositoryId BigInt
+  number       Int
+  owner        String
+  updatedAt    DateTime
+  deleted      Boolean   @default(false)
+  issue        Json?
+  writtenAt    DateTime
+  missedAt     DateTime?
+
+  @@id([repositoryId, number])
+  @@index([owner])
+}
+
+/// A repository whose issues the store may answer for. A full read of the
+/// repository's issues from Github writes this row, and the store answers for
+/// the repository only while five things hold: that read began after the
+/// owner's installation was proven to deliver `issues` events
+/// (`GithubWebhookOwner`), it began less than `ISSUES_STORE_MAX_AGE_MS` ago, no
+/// event since has left the order of two changes in doubt (`dirtyAt`), the name
+/// being asked for is still `fullName`, and the repository has not been
+/// forgotten since that read began (`forgottenAt`). Otherwise the read goes to
+/// Github and writes a new baseline. A repository deleted, renamed, transferred,
+/// archived or taken out of the installation is forgotten by setting
+/// `forgottenAt` rather than by deleting this row, so a full read that began
+/// before the forget finds the mark and writes nothing, and one that began after
+/// it clears the mark. Forgetting a repository no full read has reached writes
+/// the row with `baselineStartedAt` equal to `forgottenAt`, forgotten from the
+/// start. An uninstall deletes its owner's rows outright. `owner` is the owner's
+/// login, lowercased.
+model GithubStoredRepo {
+  repositoryId      BigInt    @id
+  fullName          String
+  owner             String
+  baselineStartedAt DateTime
+  dirtyAt           DateTime?
+  forgottenAt       DateTime?
+
+  @@index([owner])
+}
+
+/// An account whose installation of the board's App has delivered an `issues`
+/// event. Until one has, nothing proves the App's webhook is registered and
+/// subscribed, and a store no event reaches would go stale with nobody seeing
+/// it, so no repository of this owner is answered from a read that began before
+/// `issuesLiveSince`. The owner stops counting as live 24 hours after
+/// `lastDeliveryAt`, so a webhook that stops arriving stops the store answering.
+/// A delivery from a different installation id, or the first one after those 24
+/// hours, restarts the `issuesLiveSince` clock, because what happened in between
+/// is unknown. `owner` is the login, lowercased.
+model GithubWebhookOwner {
+  owner           String   @id
+  installationId  BigInt
+  issuesLiveSince DateTime
+  lastDeliveryAt  DateTime
+}
+
+
+/// Original feedback screenshots, stored only in GITHUB_STORE_DATABASE_URL.
+/// Unlike the webhook cache these bytes cannot be rebuilt from GitHub.
+model FeedbackImage {
+  id          String   @id
+  repo        String
+  repositoryId BigInt?
+  issueNumber Int?
+  contentType String
+  bytes       Bytes
+  createdAt   DateTime @default(now())
+}
+
+model PersonalGoal {
+  sub       String @id
+  dailyGoal Int    @default(100)
+  level2Goal Int @default(200)
+  level3Goal Int @default(300)
+}
+
+model OrganisationGoal {
+  orgId     BigInt @id
+  dailyGoal Int    @default(100)
+  level2Goal Int @default(200)
+  level3Goal Int @default(300)
+}
+
+model GithubDestination {
+  key          String @id
+  repositoryId BigInt
+}

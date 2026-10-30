@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<!-- board's mark (#723): three lanes of differing height on the Acme blue disc.
+     EVERY NUMBER BELOW IS A MULTIPLE OF 4, and that is load-bearing rather than tidy.
+     The viewBox is 64 and a tab draws the icon at 16, so 4 units is exactly one device
+     pixel. Off the grid the three lanes land on different pixel phases: at 8.5 wide the
+     middle lane rasterised two solid white pixels and the outer two rasterised one solid
+     plus a half-alpha neighbour, so the SHORT lane came out boldest and the intended
+     tall/short/medium reading inverted. Keep edges on multiples of 4 or redraw the mark.
+     Colours are the kit's design tokens: bg.brand-bright and text.on-brand. -->
+  <circle cx="32" cy="32" r="32" fill="#165ff2"/>
+  <rect x="12" y="16" width="8" height="32" rx="2" fill="#f6f7f7"/>
+  <rect x="28" y="16" width="8" height="16" rx="2" fill="#f6f7f7"/>
+  <rect x="44" y="16" width="8" height="24" rx="2" fill="#f6f7f7"/>
+</svg>

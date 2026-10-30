@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  // `src/**/*.db-spec.ts` and the contract suite it shares with the fast lane are
+  // listed alongside `*.spec.ts` because neither matches that pattern — the
+  // character before "spec" is a dash, not a dot — and without them `pnpm build`
+  // compiles both into dist and pulls vitest into the runtime image (#456).
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.spec.ts",
+    "src/**/*.db-spec.ts",
+    "src/**/*.contract.ts",
+    "src/**/*.test-double.ts",
+    "test"
+  ]
+}

@@ -1,0 +1,27 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+# Any local env a lane writes for itself — `.env.local`, `.env.local497`, a
+# per-port throwaway. These hold session secrets and agent tokens, so the glob
+# matters: an exact `.env.local` left a suffixed one stageable by `git add -A`.
+.env.local*
+*.log
+.DS_Store
+.wrangler/
+test-results/
+playwright-report/
+.gstack/
+*.tsbuildinfo
+.vite/
+.superpowers/
+deploy/spa/
+
+# Superpowers spec/plan working files are process artifacts, not project docs — keep them out of the repo (README.md is the project spec).
+docs/superpowers/
+
+# Screenshots a lane takes for its pull request. They are published to the
+# `lane-evidence` release, never committed — a PNG in git is the one copy
+# nobody can read inside a private repo.
+.lane-evidence/

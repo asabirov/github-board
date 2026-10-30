@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  pull_request:
+
+# Read-only, declared rather than inherited (#794 review). Nothing in this
+# workflow writes to the repository, and Dependabot — turned on by #711 — opens
+# pull requests that run it, so the token these steps get is worth pinning.
+permissions:
+  contents: read
+
+# One run per pull request. A newer push to the same pull request cancels the
+# run in flight, so the two jobs never queue behind a stale head.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  board-service:
+    name: board-service
+    timeout-minutes: 8 # Twice 224s from the last 20 main CI runs (#1115).
+    runs-on: ubuntu-latest
+    # Postgres for `test:db` (#456) — the only thing that can tell whether
+    # Prisma's SQL is right, whether the migration applies, and whether the
+    # refresh pointer's compare-and-swap really picks one winner under
+    # contention. Credentials match docker-compose.yml so the local and CI
+    # commands are alike.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: board
+          POSTGRES_PASSWORD: board
+          POSTGRES_DB: board
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U board -d board"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: board-service
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: board-service/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # The DB-backed identity code imports generated Prisma types. tsc (and the
+      # Build/Test steps below) can't resolve `@prisma/client`'s PrismaClient
+      # until the client is generated — so generate it once, right after install.
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+      - name: Typecheck
+        run: pnpm exec tsc -p tsconfig.json --noEmit
+      - name: Build
+        run: pnpm run build
+      # Boots every class Nest constructs, as `tsc` compiled it (#756). Runs after
+      # Build because `dist/` carries the `design:paramtypes` metadata `pnpm test`
+      # cannot emit; it never skips, and reports a failure if it finds no modules.
+      - name: Nest DI boot probe
+        run: node scripts/check-di-boot.mjs
+      - name: Test
+        run: pnpm run test
+      # Applies the migrations and runs `src/**/*.db-spec.ts` against the service
+      # above. It never skips: the config throws on a missing DATABASE_URL, since
+      # a lane that excuses itself reports zero tests and reads green.
+      - name: Database tests
+        run: pnpm run test:db
+        env:
+          DATABASE_URL: postgresql://board:board@localhost:5432/board
+
+  # The frontend build and unit tests. The specs read the built `dist/` for
+  # CSS class assertions, so the build runs before the test step.
+  board-frontend:
+    name: board-frontend
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: board-frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: board-frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm run build
+      - name: Test
+        run: pnpm run test
+
+  # Product-correctness checks that need a real browser. Each runs the built
+  # `dist/` through Chrome, found the way CI always found one (system Chrome or
+  # CHROME_PATH). Kept as plain `node` steps, separate from the unit suite, so a
+  # polling or fixture-server budget cannot be starved by a full vitest run.
+  board-frontend-browser:
+    name: board-frontend browser checks
+    timeout-minutes: 19
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: board-frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: board-frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm run build
+      - name: Issue text editing
+        run: node scripts/check-issue-edit.mjs
+      - name: Saved routes before their first render
+        run: node scripts/check-repos-saved-first.mjs
+      - name: Project creation modal
+        run: node scripts/check-new-project-modal.mjs
+      - name: Saved repos map after outage and access reset
+        run: node scripts/check-repos-saved.mjs
+      - name: Expired-session panel guard
+        run: node scripts/check-expired-panel.mjs

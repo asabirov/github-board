@@ -1,0 +1,1069 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@config '../tailwind.config.ts';
+
+/* Values the old kit stylesheet supplied and the public kit does not (#1450).
+   The page cap stays 1440px. The sign-in ground takes the accent, so it follows
+   the accent switch. Dark keeps a hairline and no shadow, light floats the card
+   on a shadow with no border, as before. */
+:root {
+  --grid-container-max: 1440px;
+  --auth-glow-a: color-mix(in srgb, var(--accent) 10%, transparent);
+  --auth-glow-b: color-mix(in srgb, var(--accent-strong) 18%, transparent);
+  --auth-card-border: var(--border);
+  --auth-card-shadow: none;
+  --auth-btn-shadow: none;
+  /* The floating surface for menus, popovers and dialogs. Board pins light
+     `--bg-elevated` down to a tint on a card (#1112, below), so the float has
+     its own name. It is the kit's float in dark and the white card in light. */
+  --board-overlay: var(--bg-elevated);
+}
+:root[data-theme="light"] {
+  --auth-glow-a: color-mix(in srgb, var(--accent) 9%, transparent);
+  --auth-glow-b: var(--glow-purple);
+  --auth-card-border: transparent;
+  --auth-card-shadow: var(--shadow-lg);
+  --auth-btn-shadow: var(--shadow-md);
+  --board-overlay: var(--surface);
+}
+.auth-filled-button:focus-visible { --auth-focus-shadow: 0 0 0 3px var(--ring-color); }
+/* Reduced motion: every Tailwind duration reads `--board-motion` (tailwind.config.ts),
+   and every tw-animate-css animation reads `--tw-animation-duration` first. That
+   property does not inherit, so it is set on each element. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --board-motion: 0ms; }
+  *, ::before, ::after { --tw-animation-duration: 0s; }
+}
+
+/* A theme or accent switch cross-fades (`fade` in theme.ts). The kit ships the
+   motion tokens and no theme transition, so the board adds this one. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-fade, .theme-fade *, .theme-fade ::before, .theme-fade ::after {
+    transition: background-color var(--dur-med) var(--ease), color var(--dur-med) var(--ease),
+      border-color var(--dur-med) var(--ease), outline-color var(--dur-med) var(--ease),
+      fill var(--dur-med) var(--ease), stroke var(--dur-med) var(--ease) !important;
+  }
+}
+
+/* The accent previews on Preferences (#1450). The kit's accent tokens live on
+   :root only, so each preview takes the kit's --accent for its accent and mode. */
+.theme-preview { --preview-accent: #b479ff; }
+.theme-preview[data-accent="phoenix"] { --preview-accent: #ff6a3d; }
+.theme-preview[data-accent="ocean"] { --preview-accent: #3b9dff; }
+.theme-preview[data-accent="emerald"] { --preview-accent: #16c98a; }
+:root[data-theme="light"] .theme-preview { --preview-accent: #6a2dcc; }
+:root[data-theme="light"] .theme-preview[data-accent="phoenix"] { --preview-accent: #a8370c; }
+:root[data-theme="light"] .theme-preview[data-accent="ocean"] { --preview-accent: #005ab4; }
+:root[data-theme="light"] .theme-preview[data-accent="emerald"] { --preview-accent: #076c48; }
+
+/* Running-text links stay identifiable without colour; standalone links
+   reveal their underline on hover or focus. */
+.text-link, .pj-md a {
+  text-decoration-line: none;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.pj-md a, .text-link:hover, .text-link:focus {
+  text-decoration-line: underline;
+}
+
+/* Bespoke blocks (labeled) accumulated here as the legacy per-view fork
+   stylesheet was retired, view by view:
+   - sliding sidebar rail (#104)
+   - roadmap OKR tree / drill
+   Each rule consumes the kit's token vars (var(--surface), …), never a fork. */
+
+/* bespoke: app shell + sliding sidebar rail (#104) — on the kit's tokens */
+.shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100%; }
+/* Contain the content column to the viewport width. Hover tooltips on the
+   dashboard cards are absolutely positioned and centred on their trigger, so a
+   card near the right edge on a narrow screen pushes its tooltip past the
+   viewport — a phantom ~20-30px horizontal scroll that clipped the sync stamp
+   and right-column cards on mobile. `clip` (not `hidden`) contains it WITHOUT
+   creating a scroll container, so the sticky top bar and the queue's own
+   horizontal scroller keep working. */
+.shell-main { min-width: 0; overflow-x: clip; }
+.side {
+  background: var(--bg); border-right: 1px solid var(--border);
+  padding: 20px 12px 16px; display: flex; flex-direction: column;
+  /* clip, not hidden: the slider is 200% wide, and `hidden` leaves the box
+     programmatically scrollable — a focus-reveal on a parked-panel button
+     would set scrollLeft and strand the sidebar half-shifted until reload. */
+  position: sticky; top: 0; height: 100vh; overflow: clip;
+  /* one knob: the slide duration and the delayed hide must move together, or
+     the phone's sheet vanishes mid-slide / lingers focusable after it (#608).
+     The desktop column never slides, so this only ever pays out on a phone. */
+  --side-slide-dur: 0.22s;
+}
+/* zeroing the one knob makes the slide AND the delayed hide instant */
+@media (prefers-reduced-motion: reduce) {
+  .side { --side-slide-dur: 0s; }
+}
+/* The rail sits one step above the canvas and one below a card, in both themes.
+   Light keeps #f6f7f7 on the owner's instruction (#1112, "keep current sidebar
+   color"). It is a literal, because the ruling was about a colour.
+   `scripts/measure-light-pins.mjs --check` reads the painted rail and refuses
+   anything but #f6f7f7. In dark, the kit's `--bg` is below the canvas, so the
+   rail mixes the canvas and the card (#1450). */
+:root:not([data-theme="light"]) .side { background: color-mix(in srgb, var(--surface-2), var(--surface)); }
+html[data-theme="light"] .side { background: #f6f7f7; }
+.side-logo {
+  /* the theme switch (#322) hugs the wordmark — adjacency reads as "next to the
+     logo", where a far-right icon would orphan in the empty column */
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px; margin-bottom: 14px;
+}
+.side-logo-mark {
+  border: 0; background: none; padding: 0; margin: 0; cursor: pointer;
+  font: inherit; font-weight: 700; font-size: 24px; letter-spacing: -0.03em;
+  color: var(--text); transition: opacity 0.15s;
+}
+.side-logo-mark:hover { opacity: 0.7; }
+.side-logo-mark:focus { outline: none; }
+.side-logo-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.side-logo .dot { color: var(--accent); }
+.side-nav { display: flex; flex-direction: column; gap: 2px; }
+/* Quiet context label above the Admin Hub drill-in sections. Sentence case, not
+   uppercase — an uppercased micro-label reads as eyebrow-kicker slop. */
+.side-nav-label {
+  /* top offset matches the primary nav's first item (~9px), so swapping panels
+     doesn't jump the vertical rhythm */
+  padding: 9px 12px 8px; font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.side-item {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 9px 12px;
+  border: none; border-radius: 10px; background: none; text-align: left;
+  font: inherit; font-size: 15px; font-weight: 500; color: var(--dim); cursor: pointer;
+}
+/* click focus must not leave a ring on the pill; keyboard focus keeps one */
+.side-item:focus { outline: none; }
+.side-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* `--surface-3`, not a hardcoded white at 5%: in light theme that white is
+   nothing over a light ground, so hovering the row you are ON wiped the blue
+   pill and dropped the label to near-black — the selected row looked like the
+   unselected ones the moment you pointed at it. The selected rule below is
+   stated for the hover state too, so specificity cannot take it back. */
+.side-item:hover { background: var(--surface-3); color: var(--text); }
+.side-item-on,
+.side-item-on:hover { background: var(--glow-purple); color: var(--accent); font-weight: 600; }
+.side-foot {
+  margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--muted);
+}
+.side-foot-row { display: flex; align-items: center; gap: 10px; }
+/* Account block (#107): who's signed in + sign out; sync shrinks to a dot.
+   `.side-acct` IS THE PRESSABLE ACCOUNT BLOCK AND NOTHING ELSE. A browser guard
+   reads that class off the live page as proof that `/api/auth/me` has
+   answered, and then clicks it to open the account menu
+   (`scripts/check-expired-panel.mjs`). Since #1229 step 1 the rail is drawn BEFORE the probe answers,
+   with a placeholder row in this row's place; it draws itself with utilities and
+   wears none of these classes, because a shape that answers to the real thing's
+   class tells anything asking that the probe is already done — which took two
+   guards red (#1233). Keep it that way when adding a reader here. */
+.side-acct { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.side-acct-who { display: flex; flex-direction: column; min-width: 0; }
+.side-acct-name { font-size: 13px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-acct-mail { font-size: 11px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* The sync dot, admin Access link and sign-out button render on kit
+   StatusDot/Button now (SideAccount.tsx, task 5) — .side-sync-dot(-fix),
+   .side-access(-gear) and .side-signout retired. */
+
+/* The sheet's own sync line is phone-only: above 900px the top bar prints the
+   same sentence in full, and two of it in one shell is one too many. */
+.side-sync { display: none; }
+
+/* ── the area panel (#712): Admin Hub, the Account pages, the API reference ──
+   Each of them used to replace the sidebar's primary nav, and the only way back
+   was the wordmark. They sit OVER the board now — the page you were on stays
+   rendered behind the scrim with its nav intact — inset from every edge so that
+   what is behind reads as a page you are coming back to rather than as
+   wallpaper. The rail inside carries the area's sections; one X closes it.
+
+   41/42 is the whole answer to a question the number alone cannot settle: EVERY
+   kit wrapper portal (`src/ui/kit/`) is `z-50` and portals to `document.body`, so a panel above
+   50 paints over the dialog opened inside it — and Radix's modal sets
+   `body.pointerEvents = 'none'`, so what you get is a frozen area with no dialog
+   in it. Admin Hub → Access → Edit is that dialog. Under 50 the kit layers over
+   the panel as they should; above the app's own 40 (`.shell-top-alert`) the
+   session band still clears; the kit toaster keeps notifications on top. Moving
+   this number without reading the kit's is how that dialog disappears again. */
+.area-scrim {
+  position: fixed; inset: 0; z-index: 41; border: 0; padding: 0;
+  /* The arrow, stated (#1023): a backdrop is the page, not a control, and the
+     kit's dialog overlay draws the same. */
+  cursor: default;
+  /* The kit's own scrim role, not a number of ours: it is 0.60 in dark and 0.30
+     in light, and a single dark-tuned alpha cost seven times as much in light —
+     the page ground, a card and the sidebar collapsed into one grey field, so
+     what is behind stopped reading as the page you are coming back to. */
+  background: var(--scrim);
+}
+.area-panel {
+  /* `left` is the SIDEBAR'S WIDTH, not an inset chosen to look right, and the
+     two move together — the same pairing the 900px query already keeps with the
+     sheet. `.shell`'s first grid column is 248px; move one and move the other.
+
+     At 74 the panel cut the sidebar through its labels, and what showed behind
+     was "You / Ov / Pro / Rep" with the account block sliced mid-name. Four
+     truncated words are the most prominent thing peeking out of a panel, and
+     they read as broken rather than as the page you are coming back to — which
+     is the one thing this shape exists to say. Landing on the sidebar's right
+     edge leaves the board's four destinations whole. Artur's call (#712), with
+     the cost stated: the content column loses those 174px, since the rail keeps
+     its 210. */
+  position: fixed; top: 46px; right: 74px; bottom: 46px; left: 248px; z-index: 42;
+  /* A column, not the grid it used to be: since #741 the panel can carry the
+     session bar above everything else in it, and the grid moved down to
+     `.area-panel-frame`. Nothing above 42 is involved — the bar is INSIDE the
+     panel, so it clears the scrim by being a descendant rather than by a
+     number. Raising `.shell-top-alert` over the panel instead was tried and
+     took the top bar up with it, across the X. */
+  display: flex; flex-direction: column;
+  border: 1px solid var(--border); border-radius: 16px;
+  /* The kit's overlay surface and shadow, for the reason the scrim takes its
+     token: both are re-resolved per theme, and a hardcoded pair is only ever
+     right in the theme it was picked in. */
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+/* Takes focus when it opens so the next Tab lands on its rail. Not a control,
+   so it draws no ring of its own — same reasoning as `.side:focus`. */
+.area-panel:focus { outline: none; }
+/* Content-sized, never squeezed: a tall panel must not shrink the one bar
+   telling the reader why the panel stopped answering (#741). */
+.area-panel > .session-bar { flex: none; }
+/* The panel's rail and section — everything that was the panel's own grid
+   before the session bar could sit above it. `position: relative` is the load
+   bearing line: `.area-panel-head` hangs the X in a corner absolutely, and this
+   is the box it hangs in, so the X lands below the bar and no `top` offset has
+   to be kept in step with the bar's height (#741). */
+.area-panel-frame {
+  position: relative; flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 210px minmax(0, 1fr);
+}
+.area-panel-rail {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 14px 12px; overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+/* The one scroll box: the section scrolls inside the panel, never the page
+   behind it (App locks that while a panel is open). `docs-nav.ts` reads this
+   element by id — the reference's scroll-spy measures against it. */
+.area-panel-body { min-width: 0; overflow-y: auto; }
+/* Above 900px the head is only a hanger for the X: out of flow in the panel's
+   top-right corner, with the area's name left to the rail's own column label.
+   Below it the same element becomes a real header row — see the query. */
+.area-panel-head {
+  position: absolute; top: 8px; right: 10px; z-index: 1;
+  display: flex; align-items: center;
+}
+.area-panel-head-name { display: none; }
+.area-panel-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; flex: none;
+  border: 0; border-radius: 8px; background: none;
+  color: var(--muted); cursor: pointer;
+}
+.area-panel-close:hover { background: var(--bg-elevated); color: var(--text); }
+.area-panel-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Below the sheet's own breakpoint there is nothing left to inset FROM — the
+   sidebar is a sheet rather than a column, so the panel is the screen and the
+   rounding and the shadow have no edge to describe. Every side is reset here,
+   the left one included, which is why the desktop rule can take the sidebar's
+   width without the phone noticing. Same number as the sidebar's own query on
+   purpose: it is one answer to "is this a phone", and moving one without the
+   other splits it in two. */
+@media (max-width: 900px) {
+  .area-panel {
+    top: 0; right: 0; bottom: 0; left: 0;
+    border: 0; border-radius: 0;
+  }
+  /* One column here, and the head is a real row rather than a floated corner —
+     so the session bar above it simply pushes the whole thing down. */
+  .area-panel-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  /* The X gets a row of its own here rather than floating over the rail. Floated,
+     it sat ON a rail label — through the "P" of Preferences, dead centre of
+     People — and took 30px of that row's hit zone with it; in light theme the
+     glyph and the letter are the same value and the pair is unreadable. This is
+     the worst place for that: full-bleed, there is no radius, no shadow, no
+     visible scrim and no Escape key, so the X is the ONLY way out and has to be
+     the most legible thing on the row. The area's name goes beside it, which is
+     what the rail's own label said before this query hid it. */
+  .area-panel-head {
+    position: static; justify-content: space-between;
+    padding: 4px 6px 4px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .area-panel-head-name {
+    display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+  }
+  .area-panel-rail {
+    flex-direction: row; gap: 6px; overflow-x: auto; padding: 4px 12px 10px;
+    border-right: 0; border-bottom: 1px solid var(--border);
+  }
+  /* The header above says the area now, so the rail's column head is a second
+     copy of it with no column left to head. */
+  .area-panel-rail .side-nav-label { display: none; }
+  .area-panel-rail .side-item { width: auto; flex: none; white-space: nowrap; }
+  /* In its own row: nothing scrolls under it and nothing overlaps it. 44px
+     square is the minimum touch target, which 30 was well under. */
+  .area-panel-close { width: 44px; height: 44px; }
+}
+
+/* ── mobile (#608, replacing #85's top block): the sidebar becomes a sheet ──
+   #85 laid the sidebar on its side and kept everything in it — wordmark, theme
+   switch, five nav items, avatar — so the shell cost four stacked bands before
+   the first tile. The column is not flattened now, it is parked off-canvas and
+   opened by the top bar's menu button. The shell costs one row; the sheet holds
+   exactly what the sidebar holds, because it IS the sidebar.
+
+   Both the shut and the open state live inside this query, so above 900px
+   neither class means anything and the desktop column is untouched. The scrim
+   below is the exception — nothing above 900px styles it, so App must not
+   render it there; its `SHEET_QUERY` is this query's twin. */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 50;
+    width: min(82vw, 292px); height: 100dvh;
+    padding: 16px 12px; border-right: 1px solid var(--border);
+    overflow-y: auto;
+    /* visibility, not display: it takes the shut sheet's buttons out of the tab
+       order and out of the accessibility tree, and it can be transitioned — so
+       the panel is gone only AFTER it has finished sliding away. */
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform var(--side-slide-dur) cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s var(--side-slide-dur);
+  }
+  .side-open {
+    transform: none; visibility: visible;
+    transition: transform var(--side-slide-dur) cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
+  }
+  /* The panel takes focus when it opens so the next Tab lands inside it. It is
+     not a control, so it draws no ring of its own — the item Tab reaches next
+     is what shows where focus is. */
+  .side:focus { outline: none; }
+  .side-scrim {
+    position: fixed; inset: 0; z-index: 45; border: 0; padding: 0; cursor: default;
+    /* Deep enough that the page behind stops competing for the eye — a scrim
+       you can still read through does not read as "that page is parked". */
+    background: rgba(0, 0, 0, 0.72);
+  }
+  /* Pinned to the foot of the sheet, with the account: hung under the nav it
+     read as a property of whichever item was lit. */
+  .side-sync { display: block; margin-top: auto; padding: 0 6px 12px; }
+  /* One auto margin, not two: with the account block claiming one as well, the
+     free space is split between them and the sync line parks mid-panel. The
+     sync line takes the slack; the account block sits under it. */
+  .side-foot { margin-top: 0; }
+}
+
+/* bespoke: markdown prose — ReactMarkdown output for issue bodies and comments
+   (`issue/IssuePage.tsx`, `issue/atoms.tsx`'s COMMENT_PROSE, both drawn by
+   `issue/markdown.tsx`) and for a repo's README (`repos/RepoPage.tsx`, its own
+   ReactMarkdown call) — task 12. The `pj-` name and the original note are from
+   the Projects page it was written for, which stopped drawing any markdown
+   before #785 and lost its rollup half in it. No kit primitive
+   covers arbitrary markdown element styling, so this stays a thin
+   typographic reset on kit token vars. */
+.pj-md { font-size: 13.5px; line-height: 1.62; color: var(--dim); }
+.pj-md h1, .pj-md h2, .pj-md h3, .pj-md h4 { font-size: 13px; font-weight: 680; color: var(--text); margin: 18px 0 8px; }
+.pj-md p { margin: 0 0 12px; }
+.pj-md hr { margin: 12px 0; }
+/* Tailwind preflight resets list-style to none; restore markers for rendered
+   issue/epic markdown so bullet + numbered lists read as lists (#235). */
+.pj-md ul { margin: 0 0 12px; padding-left: 20px; list-style: disc outside; }
+.pj-md ol { margin: 0 0 12px; padding-left: 20px; list-style: decimal outside; }
+.pj-md li { margin: 4px 0; }
+.pj-md a { color: var(--accent); }
+.pj-md strong { color: var(--text); font-weight: 650; }
+/* A readme's fenced code is the kit's CodeBlock inside `.md-code` (#963,
+   `repos/readme-code.tsx`), so these two rules skip it; issue bodies and comments
+   still draw the plain `pre`. The skip is wrapped in `:where()` because `:not()`
+   counts its argument: bare, it lifted the first rule to (0,2,2), over
+   `.pj-md pre code` at (0,1,2), and every fence in an issue body started its
+   first line 5px right of the rest. `scripts/check-md-fences.mjs` measures it. */
+.pj-md code:where(:not(.md-code code)) { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+  background: var(--surface-2); padding: 1.5px 5px; border-radius: 4px; }
+.pj-md pre:where(:not(.md-code pre)) { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0 0 12px; }
+.pj-md pre code { background: none; padding: 0; }
+.pj-md .md-code { margin: 0 0 12px; }
+.pj-md blockquote { margin: 0 0 12px; padding: 8px 14px; border-left: 2px solid var(--amber);
+  background: var(--chip-warn-fill); color: var(--dim); border-radius: 0 6px 6px 0; }
+/* GFM elements (#340): remark-gfm renders real tables, strikethrough and task
+   lists; without these they styled as nothing (or, before the plugin, printed as
+   raw `| a | b |` text). Quiet hairline table on kit tokens; the table is its own
+   horizontal-scroll container so a wide one never widens the card. */
+.pj-md table { display: block; width: max-content; max-width: 100%; overflow-x: auto;
+  border-collapse: collapse; margin: 0 0 12px; font-size: 12.5px; }
+.pj-md th, .pj-md td { padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.pj-md th { color: var(--text); font-weight: 620; }
+.pj-md thead th { border-bottom-color: var(--border-strong); }
+.pj-md tbody tr:last-child td { border-bottom: 0; }
+.pj-md del { color: var(--muted); }
+.pj-md .contains-task-list { list-style: none; padding-left: 2px; }
+.pj-md .task-list-item { display: flex; align-items: flex-start; gap: 8px; }
+/* Status markers by default (#384): remark-gfm emits disabled checkboxes, and the
+   board is a Github mirror, so a task-list box reads as a glyph — a tertiary
+   hairline box unchecked, a quiet brand fill with a check when done. The one
+   exception is a writer's own issue body, whose boxes become live controls
+   (.pj-task-editable, #426; see below). Strip the native OS control either way. */
+.pj-md .task-list-item input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  position: relative; flex: none; margin: 2px 0 0;
+  width: 14px; height: 14px; border-radius: 4px;
+  border: 1px solid var(--border-strong); background: transparent;
+  cursor: default;
+}
+.pj-md .task-list-item input[type="checkbox"]:checked {
+  background: var(--accent); border-color: var(--accent);
+}
+.pj-md .task-list-item input[type="checkbox"]:checked::after {
+  content: ""; position: absolute; left: 4px; top: 1px;
+  width: 3px; height: 7px; border: solid #fff;
+  border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+/* #426: a writer can tick a BODY task and it writes back to Github. Those inputs
+   carry .pj-task-editable, so they read as real controls — a pointer and a brand
+   hover ring — instead of the read-only status glyph above. */
+.pj-md .task-list-item input.pj-task-editable { cursor: pointer; }
+.pj-md .task-list-item input.pj-task-editable:hover { border-color: var(--accent); }
+
+/* bespoke: comment-card last-paragraph margin (task 12) — kit-token Tailwind
+   utilities live in @layer utilities; this file is unlayered, so an
+   unlayered .pj-md rule always beats a layered arbitrary-variant
+   ([&_.pj-md_p:last-child]:mb-0) regardless of specificity/order per the
+   CSS cascade-layers spec. Zero it here instead, scoped to the comment card. */
+.pj-cm-card .pj-md p:last-child { margin-bottom: 0; }
+
+/* ===== In-board issue page (#235) — timeline-spine layout (jony variant C).
+   Bespoke because the vertical rail + the on-rail avatars/markers need
+   pseudo-elements and absolute positioning no kit primitive covers. All on kit
+   token vars; the card/markdown reuse .pj-md + kit-utility cards in the JSX. */
+.iss-spine { position: relative; padding-left: 52px; }
+.iss-spine::before { content: ""; position: absolute; left: 16px; top: 8px; bottom: 20px;
+  width: 2px; background: var(--border); }
+.iss-node { position: relative; margin-bottom: 20px; }
+.iss-node:last-child { margin-bottom: 0; }
+/* the node's author avatar sits on the rail, ringed by the page background */
+.iss-node > .rok-av { position: absolute; left: -52px; top: 0; width: 34px; height: 34px;
+  font-size: 12px; box-shadow: 0 0 0 4px var(--surface-2); }
+/* a linked-PR / lightweight event: a quiet note threaded beside the rail, not a
+   card and no bare dot — the comment avatars are the only nodes ON the rail, so a
+   lone dot here read as an orphaned marker (#384). The "Merged" pill already
+   carries the event's meaning; the row just sits indented past the rail. */
+.iss-event { position: relative; margin-bottom: 20px; min-height: 20px; display: flex;
+  align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+
+/* the open/closed pill leading the properties column (#423). The issue's own
+   lifecycle left the panel — where, stacked above a board's "Status" field, it
+   read as a second copy of the same idea — and became this pill. Bespoke CSS
+   rather than utilities because the whole pill is driven by ONE hue var
+   (--iss-tone), so both states and the writer's deepened hover come out of a
+   single rule instead of a color-mix repeated per state per interaction. */
+.iss-state { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px;
+  padding: 3px 10px; font-size: 13px; font-weight: 500; line-height: 1.5;
+  color: var(--iss-tone); background: color-mix(in srgb, var(--iss-tone) 14%, transparent); }
+/* the writer's pill is a button — the state editor itself. It stays the same calm
+   pill at rest; the hue simply deepens under the pointer and while its menu is up. */
+button.iss-state { cursor: pointer; transition: background-color .12s ease; }
+button.iss-state:hover, button.iss-state[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--iss-tone) 26%, transparent); }
+button.iss-state:focus-visible { outline: 2px solid var(--iss-tone); outline-offset: 2px; }
+/* the same badge at list scale (#451) — every row of the Feedback page states its
+   own lifecycle, inside a 12px meta line. Only the metrics tighten: same shape,
+   same hue var, so a row and the issue page it opens agree on what "Closed"
+   looks like instead of inventing a second treatment for one fact. */
+.iss-state-sm { gap: 5px; padding: 1px 7px; font-size: 11.5px; }
+
+/* bespoke: Projects avatar sizes (task 12) — the shared Avatar (RoadmapRows.tsx,
+   rok-av base is 24px) needs three extra sizes here (an inline assignee pill,
+   a comment author, the IssueRow assignee). Combined-selector specificity
+   (0,2,0) beats .rok-av's own (0,1,0) regardless of load order — same
+   technique, different mechanism, as TeamView's pd-av /
+   DeliveriesSection's dl-who. */
+.rok-av.pj-av-xs { width: 20px; height: 20px; font-size: 9px; }
+.rok-av.pj-av-sm { width: 18px; height: 18px; font-size: 8.5px; }
+.rok-av.pj-av-lg { width: 32px; height: 32px; font-size: 13px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Task 16 — the legacy fork stylesheet is retired. Everything below moved
+   from its design-token-forked rules, repointed onto the kit's tokens.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* bespoke: base document reset */
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--surface-2); color: var(--text);
+  font-family: var(--font-sans); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── De-gray (#173, retuned by #491): real figure/ground in both themes ───────
+   The old kit's LIGHT ramp packed the page (#e1e2e4) and cards
+   (#f2f3f4) into a ~5% gray band, so nothing separates — the whole
+   app reads as a flat gray wash. Board-local retune: white cards on a light
+   canvas, and flow-board stage tiles recessed into wells. DARK already had the
+   spread (near-black canvas vs #1f222d cards); it just gains a real card shadow.
+
+   The canvas carries the whole separation, because the board's own panel — the
+   canonical BLOCK (src/ui/block.ts) — is a bare fill: no border, no shadow, per
+   the less-borders house rule. #173 first set the canvas to #f6f7f7 and leaned
+   on a shadow to lift the cards, but BLOCK has no shadow to lean on, so a block
+   sat white-on-near-white at 1.07:1 and its edge simply vanished. #491 deepened
+   the canvas to #eceef0 (1.16:1, ΔL* 6.0 — comfortably past the ~4.4 iOS
+   grouped-list uses for the same borderless-white-card figure) so the fill alone
+   carries the edge and both decisions hold as written.
+
+   That also puts light in the same order as dark — canvas < well < sidebar rail
+   < card in both — where before, light had the rail flush with the canvas and
+   the well below it. Kit StatCard/Card carry their own
+   `bg-surface border-line shadow-sm`; they ride the same tokens and
+   need no markup change either way. --board-well is the recess.
+   The selectors match the kit's own `:root[data-theme]` specificity, and
+   `main.tsx` loads `app.css` after the kit, so these values win. */
+:root[data-theme="light"] {
+  /* The old kit's primary ink. The public kit's `--text` is lighter, and no
+     series colour clears both chart floors against it (#1450). */
+  --chart-selection: #0e1015;
+  --surface-2:  #eceef0;    /* page canvas (kit #e9ecf3, #173's #f6f7f7) */
+  /* The step below a white card (#1112). Board reads `--bg-elevated` as the
+     tint ON a card — a loading bar, a chip, a row
+     hover — and there is nothing above white to lift into, so on board the
+     token has always pointed down in light (#447 says so, above the housed
+     queue). The kit's light `--bg-elevated` is #ffffff, the same white as the
+     card it sits on: the day
+     grid's 357 zero cells went from 1.161:1 to 1.000:1 and vanished, and every
+     skeleton went white on white. Held at the value board was drawn against.
+     The kit's fix is for the ramp the kit ships; board's ramp is this block,
+     white cards on a canvas #491 deepened to 1.16:1 for a block with no edge
+     of its own, and the kit's new card sits 1.082:1 above its page, the step
+     #491 rejected. After the owner chose outline-only zero days (#1293),
+     `scripts/measure-light-pins.mjs --check` reads their hairline against the
+     card and refuses under 1.05:1; it no longer measures this fill pin. */
+  --bg-elevated: #edeef0;  /* the tint on a card (kit #ffffff) */
+  /* Whisper of resting fill for the borderless drill-down list rows (#205): on
+     the near-white canvas, hover-only fill leaves rows unseparated at density.
+     Transparent (unset) in dark, where text contrast already carries the rows. */
+  --pj-row-rest: rgba(16, 18, 21, 0.025);
+  --shadow-sm: 0 1px 2px rgba(16, 18, 21, 0.04), 0 1px 3px rgba(16, 18, 21, 0.05);
+  --board-well: #f0f1f3;   /* recessed stage tile inside a card */
+  --board-well-inset: inset 0 1px 0 rgba(16, 18, 21, 0.04);
+  /* attention banner: soft rose tinted panel + red left accent (both modes) */
+  --board-attn-bg: var(--chip-danger-fill);
+  /* ⌘K palette active row (#347): a gentle darkening on the white surface. */
+  --cmdk-row-active: rgba(16, 18, 21, 0.055);
+  /* Member hues, light steps — validated against surface #ffffff. */
+  --seg-1: #008f81;  /* teal */
+  --seg-2: #7f6cb8;  /* violet */
+  --seg-3: #a4005c;  /* magenta */
+  --seg-4: #b25b74;  /* rose */
+  --seg-5: #7a28ab;  /* purple */
+  --seg-6: #006d87;  /* cyan */
+  --seg-7: #006863;  /* deep teal */
+  --seg-8: #8a467b;  /* mauve */
+  --seg-9: #00828c;  /* aqua */
+  --seg-none: #60687f;  /* neutral 450 */
+}
+:root:not([data-theme="light"]) {
+  --chart-selection: #ffffff;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.28);
+  --board-well: var(--surface-2);   /* recessed stage tile (dark): the canvas, a clear step below a card */
+  --board-well-inset: inset 0 1px 0 rgba(0, 0, 0, 0.4);
+  /* ⌘K palette active row (#347): a whisper of light lifting the row above the
+     elevated palette surface — the kit default (bg-secondary) went the wrong way,
+     recessing it below the surface so the keyboard cursor read as invisible. */
+  --cmdk-row-active: rgba(255, 255, 255, 0.065);
+  /* the dark danger fill is nearly black — give the banner a real red
+     tint so it reads as the same tinted panel as light, not a bare outline. */
+  --board-attn-bg: color-mix(in srgb, var(--pink) 12%, var(--surface));
+  /* Member hues, dark steps — validated against surface #1f222d (kit #211e2d). */
+  --seg-1: #8ae5d6;  /* teal */
+  --seg-2: #d3c8ff;  /* violet */
+  --seg-3: #e871a0;  /* magenta */
+  --seg-4: #ffbbcc;  /* rose */
+  --seg-5: #ba81e7;  /* purple */
+  --seg-6: #65b8d4;  /* cyan */
+  --seg-7: #52b1aa;  /* deep teal */
+  --seg-8: #cf95c1;  /* mauve */
+  --seg-9: #78d5df;  /* aqua */
+  --seg-none: #737c95;  /* neutral 400 */
+}
+
+/* The day grid's number ink (#953): one for the pale end of the ramp, one for
+   the deep end, and the per cent where a cell changes from one to the other.
+   `dayCellPaint` in DayGrid.tsx says why most ramps need pure black and white
+   rather than the kit's inks. Each flip is where the two inks cross on that
+   accent's ramp (#1450). Dark Nebula keeps the kit's pair, which clears 4.5:1
+   on every fill. */
+:root {
+  --day-ink-on-pale: var(--text);
+  --day-ink-on-deep: var(--accent-contrast);
+  --day-ink-flip: 78;
+}
+:root[data-theme="dark"][data-accent="phoenix"],
+:root[data-theme="dark"][data-accent="ocean"],
+:root[data-theme="dark"][data-accent="emerald"] {
+  --day-ink-on-pale: #ffffff;
+  --day-ink-on-deep: #000000;
+}
+:root[data-theme="dark"][data-accent="phoenix"] { --day-ink-flip: 72; }
+:root[data-theme="dark"][data-accent="ocean"] { --day-ink-flip: 71; }
+:root[data-theme="dark"][data-accent="emerald"] { --day-ink-flip: 60; }
+:root[data-theme="light"] {
+  --day-ink-on-pale: #000000;
+  --day-ink-on-deep: #ffffff;
+  --day-ink-flip: 78;
+}
+:root[data-theme="light"][data-accent="phoenix"] { --day-ink-flip: 83; }
+:root[data-theme="light"][data-accent="ocean"] { --day-ink-flip: 82; }
+:root[data-theme="light"][data-accent="emerald"] { --day-ink-flip: 85; }
+
+/* The chart series (#1245): the picked accent, mixed toward the card. A mark
+   needs 4.4:1 on the dark card and 5.3:1 on the light card, and the selected
+   bar needs 3.5:1 against the rest (`check-chart-contrast.mjs`). No raw accent
+   clears both, so each theme and accent has its own mix (#1450). */
+:root {
+  --chart-series: color-mix(in srgb, var(--accent) calc(var(--chart-series-pct) * 1%), var(--surface));
+  --chart-series-pct: 87;
+}
+:root[data-theme="dark"][data-accent="phoenix"] { --chart-series-pct: 85; }
+:root[data-theme="dark"][data-accent="ocean"] { --chart-series-pct: 85; }
+:root[data-theme="dark"][data-accent="emerald"] { --chart-series-pct: 72; }
+:root[data-theme="light"] { --chart-series-pct: 85; }
+:root[data-theme="light"][data-accent="phoenix"] { --chart-series-pct: 90; }
+:root[data-theme="light"][data-accent="ocean"] { --chart-series-pct: 89; }
+:root[data-theme="light"][data-accent="emerald"] { --chart-series-pct: 91; }
+
+/* ── Member hues (#477, widened #509) ─────────────────────────────────────────
+   Nine rungs, one fixed to each person (src/member-color.ts), plus a neutral for
+   someone the roster cannot place and two more non-person tones for the ring
+   runs that stand for more than one person or for nobody.
+
+   They are drawn from the hue arc the board does NOT already spend on meaning.
+   Amber means a warning here — `--amber` on a Feedback report left
+   waiting more than a day, on an Oldest-open row past 60 days, on an issues-list
+   Age cell past the same 60 days (#822, the same two thresholds as the block
+   above it), and on the top bar's stale sync dot; it was the Bugs and Unassigned
+   counts under the crew row until #752 took that band off Overview — red means
+   danger, green means success and blue means the product and the selection, so
+   none of those four families can also mean a colleague. Red round to green is
+   closed as one band, because the orange and the yellow-green between them are
+   not colours anyone should have to read as a person. What is left is teal through cyan, and violet
+   through magenta to pink, and every rung sits at least ΔE00 15 from every
+   colour the board spends on meaning, in both themes.
+
+   The scheme this replaces took its rungs from three ramps of the old UI kit, so rungs 4-6
+   were weaker steps of the same three families as 1-3 and the seventh member had
+   to repeat somebody. These nine are their own colours, one hue each, stepped in
+   lightness too, so the ladder no longer runs out at six — and a member's rung
+   no longer moves with the size of the unit (#507).
+
+   Each rung carries two steps because the themes need opposite ends of a ramp —
+   dark takes the lighter step, light the deeper one — and both clear 3:1 against
+   their theme's surface (4.0 light, 5.5 dark at the tightest). The ladder is
+   nested: rungs 1-3 are the widest trio the arc holds, 1-6 the widest six that
+   keep those three, 1-9 the widest nine that keep those six.
+
+   What that costs, said plainly. A person's rung comes from their own identity
+   rather than from their place in the unit, so any two colleagues can land on any
+   two rungs — which makes the whole ladder's tightest pair the number to read,
+   not the trio's. Across all nine that pair is ΔE00 9.9 apart in dark and 10.3 in
+   light under ordinary vision, and 4.7 / 5.6 under deuteranopia. Comfortable to
+   about six; past that, two rungs at a time want a second look on the ring. So
+   identity never rests on the hue alone: the crew card carries the face and the
+   name, and the ring's hover names every run it paints.
+
+   The two aggregate runs deliberately have no hue: colour here means "a person",
+   so a grey says "not a person" without needing a legend to explain it. They
+   read as a step above the unclosed track (--border) so the ring still
+   shows where the closed arc ends, and `others` sits above `unattributed`
+   because it stands for real work by real people, just unnamed ones.
+
+   Mixed toward the card surface rather than toward `transparent`: the segments
+   are painted over the track circle, so a translucent grey would composite with
+   the track and land somewhere neither value predicts. */
+:root {
+  --seg-others: color-mix(in srgb, var(--muted) 78%, var(--surface));
+  --seg-unattributed: color-mix(in srgb, var(--muted) 44%, var(--surface));
+}
+
+/* ── The housed queue's interior ramp (#447) ──────────────────────────────────
+   A queue now sits IN a block (src/ui/queue-region.ts), and its search field, its
+   view toggle and its row hover were all `--surface` — the block's own fill. On
+   the block those three resolve to the same colour, the hover stops registering
+   and the field stops reading as a field.
+
+   The kit has no single token that separates all three. `--bg-elevated` is the
+   card's companion step, but it points opposite ways per theme (above the card in
+   dark, below it in light) and in light it lands within 3 units of `--board-well`,
+   so it cannot be both the recess and the lift. So the region declares its own
+   three steps, scoped to itself: a viewer that is the whole page (the Project
+   page) never gets `queue-housed` and keeps the defaults below.
+
+   The deep step is the chrome — the same recess `--board-well` already cuts for a
+   stage inside a card, which also puts the field at the same tone as the board's
+   columns. `--queue-chip` is whatever sits raised out of that chrome: a filter
+   token. The row hover is the shallow step, and it is a translucent delta rather
+   than a colour so it composites onto the block instead of restating its fill;
+   light darkens and dark lightens, the split `--cmdk-row-active` already makes,
+   since there is nothing above white to lift into. */
+:root {
+  --queue-chrome: var(--surface);
+  --queue-chip: var(--bg-elevated);
+  --queue-row-hover: var(--surface);
+}
+.queue-housed {
+  --queue-chrome: var(--board-well);
+  --queue-chip: var(--surface);
+  --queue-row-hover: rgba(255, 255, 255, 0.055);
+}
+html[data-theme="light"] .queue-housed { --queue-row-hover: rgba(16, 18, 21, 0.028); }
+
+/* The plate under the chosen half of the view toggle (#1032). The kit's track
+   paints it `bg-sunken`, and that is the canvas itself: on the Queue and Project
+   pages the plate measured 1.000:1 against its ground in both themes, so only the
+   ink said which view was on. On the canvas it takes the card's fill instead, and
+   in a housed queue, which is a card, the kit's sunken step. Either way the step
+   is 1.16:1 in light and 1.20:1 in dark.
+
+   Both numbers are a COMPUTED reading, and `scripts/measure-toggle-plate.mjs`
+   is what re-takes them: the token resolving to a name proves nothing, because
+   `bg-sunken` resolved to a name too and drew nothing on either page. */
+:root { --queue-toggle-on: var(--surface); }
+.queue-housed { --queue-toggle-on: var(--surface-2); }
+
+/* ⌘K palette selected row (#347): keyboard nav already works — the kit's default
+   selected style (`data-[selected=true]:bg-surface-3`) just renders the row
+   DARKER than the elevated palette surface in dark mode, so the moving cursor was
+   near-invisible and arrows looked dead. Swap in a quiet neutral raise that reads
+   as "active" in both themes. Unlayered, so it wins over the kit's layered utility;
+   `data-selected` covers both keyboard and pointer selection. */
+[cmdk-item][data-selected='true'] { background: var(--cmdk-row-active); }
+
+/* The plate a selected row takes. #1097 offered four variants and the reporter
+   chose this one — "a filled band, no border" — so `SELECTED_ROW` in
+   `ui/command-menu.tsx` is on `plate` and this is what every list on the board
+   now draws round the row that is on. `plate-edge` spends it too and is one of
+   the three that were offered and not taken.
+
+   NOT the old kit's `--current-bg`, which it named for exactly
+   this ("the plate a resting selection takes"). That
+   plate is the end of a ladder the ink walks: `--bg-elevated` in dark, `--surface-2`
+   in light. These menus stand ON `--board-overlay` (`MENU_SURFACE`, `PICK_PANEL`), so
+   in dark the plate and the panel are one colour, #2a2639, and the mark draws
+   nothing at all. The kit hits the same wall in Calendar and says so in its own
+   comment: "PopoverContent paints bg-elevated, which is what --current-bg itself
+   resolves to there — 1.000:1, nothing painted at all."
+
+   So the plate is `--surface-2` in BOTH themes, which is the step the kit's other
+   toggle treatment takes for its on state (`track`: `data-[state=on]:bg-surface-2`)
+   and the step Calendar's range band takes. It steps DOWN from the panel in both —
+   #161520 under #2a2639 in dark, #eceef0 under #ffffff in light — which is the
+   direction light's `--current-bg` already goes. The light figure is board's own
+   pinned `--surface-2` (the light block above, #491's deepened canvas) and
+   not the kit's #e1e2e4, because that pin is what a board page resolves.
+
+   Both numbers are a COMPUTED reading and neither is guarded: `SELECTED_ROW` is
+   the only unguarded surface step this repo draws, and what re-reads it is
+   `scripts/shoot-1097-variants.mjs`, which prints them beside every frame it
+   takes. It is evidence, not a gate — nothing in CI would go red if a later
+   token bump flattened this plate onto its panel, which is exactly what #1114
+   caught the day grid doing. A token resolving to a name proves nothing here,
+   which is the whole of why the kit's one could not be used (#1032 learned this
+   on the view toggle).
+
+   `--pick-plate-cursor` is the keyboard cursor landing ON that plate, and it is the
+   kit's `--hov-current` formula with the plate substituted: the same 4% wash of the
+   ink, taken over the plate rather than over the ground, because a cursor step
+   large enough to be seen on the plate would overshoot it on the panel. It is
+   spent in three places, which are the three ways a cursor lands on a row here:
+   the pointer, `MenuOption`'s focus (the hook moves real focus onto the row that
+   is on when a fixed menu opens, #1020), and cmdk's own highlight in a
+   `PickList`. The last needs the doubled selector to outrank the palette's rule
+   above, which is unlayered too and one attribute more specific than a class;
+   the first two only have to beat a Tailwind utility, which is layered. */
+:root {
+  --pick-plate: var(--surface-2);
+  --pick-plate-cursor: color-mix(in srgb, var(--text) 4%, var(--pick-plate));
+}
+.pick-plate { background: var(--pick-plate); }
+/* Match Tailwind's hover capability gate: touch must not retain a cursor wash. */
+@media (hover: hover) {
+  .pick-plate:hover { background: var(--pick-plate-cursor); }
+}
+.pick-plate:focus,
+[cmdk-item][data-selected='true'].pick-plate { background: var(--pick-plate-cursor); }
+
+/* De-gray (#173): the attention banner as a tinted panel with a red left accent,
+   read the same in both modes (dark's --chip-danger-fill is near-black, so a bare
+   red hairline looked like a debug outline — see --board-attn-bg). No full border. */
+.attn { border: 0; border-left: 4px solid var(--pink); background: var(--board-attn-bg); }
+
+/* bespoke: the sticky band at the top of the content column. It holds the top
+   bar and, when the session dies, the expiry bar above it (#512) — one sticky
+   ancestor, so the two can never disagree about where "the top" is and nothing
+   has to reserve space for anything. z-20 matches what the top bar carried on
+   its own, so nothing changes while the session is live; the alert state rises
+   above the page's own menus (z-30), because a bar you can cover is a bar you
+   can miss. */
+.shell-top { position: sticky; top: 0; z-index: 20; }
+.shell-top-alert { z-index: 40; }
+/* Tinted rather than bordered — the red hairline under it is the only line, and
+   it carries meaning. In flow, so it displaces the page instead of hiding a row. */
+.session-bar {
+  background: color-mix(in srgb, var(--pink) 9%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--pink) 30%, transparent);
+}
+
+/* bespoke: shared quiet-state block + error paragraph. .state is used by
+   RoadmapOkr and TeamView's loading/empty screens; .okr-err by error
+   paragraphs across Dashboard, TeamView, AdminView and RoadmapOkr/Drill. */
+.state { padding: 40px; color: var(--dim); }
+.state h2 { color: var(--text); }
+.okr-err { color: var(--pink); font-size: 12px; padding: 10px 16px; }
+
+/* Shared avatar + quiet empty-state hooks (rok-av: src/ui/avatar.tsx). */
+.rok-empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
+.rok-av {
+  width: 24px; height: 24px; border-radius: 999px; display: inline-flex; flex: none;
+  align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+}
+/* Photo variant (#95): same footprint as the initials circle. */
+.rok-av-img { object-fit: cover; background: var(--surface-2); }
+
+/* ===== cycle deliveries (#105) — DeliveriesSection.tsx renders on
+   kit wrappers (StatusDot, Badge, Button) + kit-token Tailwind utilities.
+   .dl-who stays: it sizes/overlaps the shared Avatar (rok-av, still used by
+   Team/Admin/RoadmapDrill too) via a compound selector, which a plain
+   utility class on Avatar can't reliably win a specificity tie against. */
+.dl-who { flex: none; width: 60px; display: flex; justify-content: flex-end; }
+.dl-who .rok-av { width: 22px; height: 22px; margin-left: -6px; border: 1.5px solid var(--surface-2); }
+.dl-who .rok-av:first-child { margin-left: 0; }
+
+/* ===== personal-queue assignee cluster (#230) — a small stacked cluster on the
+   "Your work" card. Same compound-selector trick as .dl-who, but the ring is the
+   card's own surface (cards sit on bg-surface), and unassigned shows a dashed
+   placeholder to mark "up for grabs" work (#231). */
+.q-who { flex: none; display: flex; }
+.q-who .rok-av { width: 20px; height: 20px; font-size: 9px; margin-left: -6px; border: 1.5px solid var(--surface); }
+.q-who .rok-av:first-child { margin-left: 0; }
+.q-who-empty { flex: none; width: 20px; height: 20px; border-radius: 999px;
+  border: 1.5px dashed color-mix(in srgb, var(--muted) 40%, transparent); }
+
+/* ===== a flow-strip figure that has just changed (#824) — the mark that says a
+   number moved between two refreshes, and which way it went. `ui/changed-figure.tsx`
+   puts these classes on and nothing else uses them.
+
+   ONE KNOB, the way `.side` has one for its slide: the tint and the chevron rise
+   and fall on the same `--figure-moved-dur`, and they have to, or a mark that
+   arrives gently snaps away. Zeroed under reduced motion at the foot of this
+   block. */
+.figure-moved {
+  --figure-moved-dur: 0.25s;
+  /* inline-block, not inline: the chevron is positioned against this box, and an
+     inline box that wrapped a line would give it two fragments to choose from.
+     The baseline is unchanged either way, so the figure still sits level with
+     the note beside it in the tile's `items-baseline` row. */
+  position: relative; display: inline-block;
+  transition: color var(--figure-moved-dur) ease;
+}
+/* ONE COLOUR IN BOTH DIRECTIONS, and it is not green or red.
+
+   The tint says this figure moved. It does not say the move was good, because
+   the strip cannot know and neither can this file. Issues falling from 10 to 9
+   is good news, Closed yesterday falling is bad news, and Released yesterday
+   moving either way is neither — three tiles, three answers, drawn by one
+   presentational component that is handed no opinion about any of them. The
+   first cut of this used `--green` and `--pink`, and the board
+   painted an open-issue count that had improved in the kit's colour for an
+   error. `--green` and `--pink` are the kit's words for good and
+   bad, not for up and down. The chevron carries the direction; the reader draws
+   the conclusion, which is what the board does everywhere else.
+
+   There is one class rather than two ON PURPOSE. `changed-figure.tsx` never puts
+   the direction in a class name, so this stylesheet has no way to tell a rise
+   from a fall and cannot grow a rule that colours one of them — the rule above
+   is held by the shape of the thing rather than by this paragraph.
+
+   `--accent` by elimination over the kit's `--text-*` set, not by taste.
+   `--text` is what the figure already is, so it cannot mark it.
+   `--dim` and `--muted` are quieter than the default, so a
+   mark drawn in either makes the figure recede when the whole job is to draw the
+   eye. `--green`, `--pink` and `--amber` all carry the
+   verdict this must not carry. That leaves one, and it is the board's existing
+   attention colour. Contrast against the card it stands on, computed over the
+   kit's values and app.css's light `--surface` override: 5.36:1 dark on
+   #1f222d and 6.98:1 light on #ffffff. The figure is 27px semibold, which is
+   large text at 3:1, so both clear it with room and clear the 4.5:1 for normal
+   text as well.
+
+   Unlayered, so it beats `BIG`'s `text-fg` — a Tailwind utility sits
+   in `@layer utilities` and anything outside a layer outranks it whatever the
+   order. The token is defined light and dark by the kit, so the tint follows the
+   theme switch with nothing said here. */
+.figure-moved-lit { color: var(--accent); }
+/* Parked in the 10px gap the tile already leaves between the figure and its
+   note, so raising the mark reflows nothing: the box spans 1px to 10px past the
+   figure's right edge and the note starts at 10px.
+
+   Centred on the figure's own box rather than pinned to the top of it, and that
+   is a correction to what this first looked like on the built page. Perched at
+   the top edge of a 27px line the chevron read as an exponent on the number — a
+   caret belonging to the digits — instead of as a mark standing beside them. The
+   centring is a percentage of the box so a caller drawing the figure at another
+   size gets the same relationship rather than the same offset. */
+.figure-moved-caret {
+  position: absolute; top: 50%; margin-top: -4.5px; right: -10px; width: 9px; height: 9px;
+  opacity: 0; transition: opacity var(--figure-moved-dur) ease;
+}
+.figure-moved-lit .figure-moved-caret { opacity: 1; }
+
+/* Reduced motion keeps the mark and drops the movement. Zeroing the one knob
+   makes the tint and the chevron snap in and snap out instead of fading, and
+   `FIGURE_MOVED_MS` still holds them there for the same 600ms. The mark stays
+   rather than going silent because it is not decoration: it is the only thing on
+   the board saying which of nine numbers moved while you were reading, and a
+   reader who has asked for less movement has asked for less movement, not for
+   less information. */
+@media (prefers-reduced-motion: reduce) {
+  .figure-moved { --figure-moved-dur: 0s; }
+}
+
+/* #1322: match the dark heatmap card; keep light's native colours and sizing. */
+html:not([data-theme="light"]) [data-day-scroll] { scrollbar-color: var(--border-strong) var(--surface); }
+
+/* bespoke: the queue board's sideways scroll (#1113) — the scroller and the
+   rail that carries its scrollbar. `BoardView`'s `useSidewaysScroll` docblock
+   holds the reasoning; what is here is the paint.
+
+   The scroller draws no bar of its own. Its own bar is at the bottom of its own
+   box, which is as tall as the tallest column, so it is below the fold on any
+   board worth scrolling — the fault this issue is about. `scrollbar-width` is
+   the property that hides it: on Chrome 121 and later a standard scrollbar
+   property SUPPRESSES every `::-webkit-scrollbar` rule on the same element, so
+   the pseudo-element below is the belt to this brace and not the mechanism. */
+.board-scroll { overflow-x: auto; scrollbar-width: none; }
+.board-scroll::-webkit-scrollbar { display: none; }
+
+/* The rail: a second scroller with no content, carrying the bar where a reader
+   arrives already looking — above the columns, in the flow, under the board's
+   own header. It was `position: sticky` to the foot of the window until the
+   review of #1116, and what that cost is the whole reason it is not now. A
+   pinned 10px band spans the board, and everything under it stops being
+   clickable: walked through the page's 1,515 scroll offsets at 1280, a card's
+   24x24 "Issue actions" button had its own centre answered by the rail at 334
+   of them. A scrollbar that makes buttons dead is worse than the missing
+   scrollbar it was drawn to fix, and no overlay pinned to the window can avoid
+   it: sticky only ever lifts a box OVER the content it was going to sit under.
+   In the flow it reserves its own line and covers nothing, at any offset.
+
+   NO HEIGHT. The box is a 1px span and whatever bar the platform draws under
+   it, so the rail is exactly as tall as its own scrollbar on every platform
+   rather than clipping a fatter one or leaving a gap under a thinner one.
+   Measured in Chrome 153: 11px with the rule below, 16px with no rule at all. */
+.board-rail {
+  overflow-x: auto; overflow-y: hidden;
+  margin: 0 0 10px;
+  border-radius: 999px;
+}
+.board-rail-span { height: 1px; }
+
+/* THIS is what keeps the bar painted before anyone touches it. A box with a
+   `::-webkit-scrollbar` rule gets a Blink CUSTOM scrollbar, and a custom
+   scrollbar is never an overlay one — it takes its track out of the content
+   box and stays drawn. Measured on Chrome 153 under `--enable-features=
+   OverlayScrollbar`, which is the overlay path macOS is on by default: with
+   these rules the bar is 10px of real layout, and with `scrollbar-width` /
+   `scrollbar-color` in their place it is 0px, an overlay that fades. The PR
+   that added them had both, so the standard properties won and the bar this
+   issue asks for was not being drawn at all on the reporter's machine.
+
+   Which is why `scrollbar-width` and `scrollbar-color` are inside a feature
+   query here rather than beside these rules: they are for the engine that has
+   no `::-webkit-scrollbar` to honour, and setting them unconditionally is what
+   turned these four rules off. */
+.board-rail::-webkit-scrollbar { height: 10px; }
+.board-rail::-webkit-scrollbar-track { background: var(--bg-elevated); border-radius: 999px; }
+.board-rail::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.board-rail::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* Firefox, which has the standard properties and not the pseudo-elements.
+   Chrome answers this query false and keeps the rules above: measured. That
+   Firefox answers it true is NOT measured here, and if it turns out not to,
+   what it draws is its own default bar in a box that sizes to it. */
+@supports not selector(::-webkit-scrollbar) {
+  .board-rail {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) var(--bg-elevated);
+  }
+}
+
+/* Kit 8.2.0 focus audit, 2026-09-14 (#1142): keep BoardView’s card-link
+   ring and AccessSection’s native role-button ring; neither is a kit control.
+   AccessSection’s Input warning ring changes the warning colour, not the
+   default focus width. Keep it so a warning remains marked during editing. */
+
+/* Kit 8.2.0, 2026-09-14 (#1142): DialogContent wraps scrolling children
+   for focus-glow room. Board’s unpadded command palette owns its list scroller;
+   that wrapper bleeds 4px past phone edges and breaks the list’s flex sizing.
+   Give this wrapper no box, restoring cmdk as the dialog’s flex item. Keep
+   cmdk shrinkable and clipped so its search field and footer stay in place. */
+[role="dialog"] > div:has(> [cmdk-root]) { display: contents; }
+[role="dialog"] > div > [cmdk-root] { min-height: 0; overflow: hidden; }
+
+/* Keep the cell's hover ring above the fire and count plate. */
+.goal-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+:root { --goal-flame-level-3: #22d3ee; }
+[data-theme="light"] { --goal-flame-level-3: #087e96; }
+.goal-flame {
+  position: absolute;
+  inset: -7px -2px -1px;
+  pointer-events: none;
+  color: var(--amber);
+  background: linear-gradient(0deg, currentColor, transparent 80%);
+  border-radius: 4px;
+  transform-origin: bottom;
+  animation: goal-burn 3600ms ease-in-out 3;
+}
+[data-theme="light"] .goal-flame[data-flame-level="1"] { color: var(--signal-solid-warn); }
+[data-theme="light"] .goal-flame[data-flame-level="2"] { color: var(--signal-solid-danger); }
+.goal-flame[data-flame-level="2"] { color: var(--pink); }
+.goal-flame[data-flame-level="3"] { color: var(--goal-flame-level-3); }
+.goal-flame svg { width: 100%; height: 100%; overflow: visible; opacity: .65; }
+.goal-flame + .goal-count {
+  position: relative;
+  z-index: 1;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 2px;
+  padding: 0 2px;
+  line-height: 15px;
+}
+@keyframes goal-burn {
+  0%, 100% { transform: scaleY(.93); }
+  50% { transform: scaleY(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .goal-flame { animation: none; }
+}
+
+.repo-metric:empty::before {
+  content: '\200b';
+}

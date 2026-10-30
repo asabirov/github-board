@@ -1,0 +1,1 @@
+header Content-Security-Policy "default-src 'none'; script-src 'self' 'sha256-Ks1PB1QUbD4uj5+X+tA6lm7pKTrstwBfxP+DpxCXoKw=' {$BOARD_CSP_SCRIPT_ORIGIN}; connect-src 'self' {$BOARD_CSP_SCRIPT_ORIGIN}; img-src 'self' https: blob: data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"

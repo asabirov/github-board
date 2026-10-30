@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      # Local dev cluster. Renamed to 'board' in the stage-5 rename; the volume
+      # below is fresh (dev data is disposable — re-seeded from people-aliases.ts
+      # on first boot). Point your .env DATABASE_URL at board:board@…/board.
+      POSTGRES_USER: board
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-board}
+      POSTGRES_DB: board
+    volumes:
+      - board-pg:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U board -d board"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # The Github webhook store's own Postgres (#1007, V5), the local twin of the
+  # production container of the same name. Point GITHUB_STORE_DATABASE_URL at
+  # postgresql://board:board@localhost:5433/board_store. Everything in it is
+  # rebuilt from Github, so its volume can be dropped at any time.
+  board-store-pg:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: board
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-board}
+      POSTGRES_DB: board_store
+    volumes:
+      - board-store-pg:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${STORE_POSTGRES_HOST_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U board -d board_store"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  board-pg:
+  board-store-pg:

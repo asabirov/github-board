@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- The boot title: what a person sees before React mounts, and what a
+         bookmark or a cold/restored tab keeps until the app wakes. Once mounted,
+         App.tsx sets document.title from routeTitle() in src/route.ts. -->
+    <title>Board</title>
+
+    <!-- The mark is the SVG; the rest is generated from it by
+         scripts/build-icons.mjs. See that file before editing any of these. -->
+    <link rel="icon" type="image/svg+xml" href="/board-mark.svg" />
+    <link rel="icon" sizes="16x16 32x32 48x48" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/board-mark-mono.svg" color="#165ff2" />
+    <script>
+      (function () {
+        try {
+          // Paints the stored theme and accent before the app loads, so the first
+          // frame matches. The theme key has two names, newest first. src/theme.ts
+          // carries the old value into board_theme on the first boot (#1450).
+          var stored =
+            localStorage.getItem('board_theme') || localStorage.getItem('lepsto_theme');
+          var light =
+            stored === 'light' ||
+            (stored !== 'dark' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: light)').matches);
+          var root = document.documentElement;
+          root.setAttribute('data-theme', light ? 'light' : 'dark');
+          var accent = localStorage.getItem('board_accent');
+          if (accent === 'phoenix' || accent === 'ocean' || accent === 'emerald') {
+            root.setAttribute('data-accent', accent);
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

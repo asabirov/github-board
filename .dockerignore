@@ -1,0 +1,21 @@
+# Build context for BOTH images is the repo root (board-api via
+# deploy/board-api/Dockerfile, board-web via ./Dockerfile), so the ignore rules
+# live here rather than beside either package.
+#
+# Patterns are anchored at the context root and `*` does not cross a `/`, so a
+# per-package directory needs the `**/` prefix to match at all.
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+# ...except the one tracked env file that is build INPUT rather than a local
+# secret. `vite build` runs in production mode, so it reads
+# board-frontend/.env.production. That file holds only a comment today and the
+# SPA reads only one VITE_ key anywhere (VITE_AUTO_REFRESH_MS), so excluding it
+# costs nothing right now — the exception is here so a key added to it later
+# reaches the build instead of vanishing from the context with no error.
+!board-frontend/.env.production
+**/*.log
+**/coverage
+**/.vitest
+.git

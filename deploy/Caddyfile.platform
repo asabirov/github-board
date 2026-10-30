@@ -1,0 +1,51 @@
+# Caddyfile for the Acme platform deploy of board (see the root Dockerfile).
+#
+# Differs from deploy/Caddyfile (Hetzner) in two ways:
+#   1. TLS is terminated by the platform ingress, so this serves plain HTTP on
+#      :8080 — Caddy must NOT try to manage a cert for board.acme.example here.
+#   2. The board-api upstream is injected via ${BOARD_API_UPSTREAM} (e.g.
+#      "board-api:3000") instead of the compose service name.
+#
+# The atlas.acme.example -> board.acme.example redirect is handled by a platform
+# domain redirect, not in Caddy, so it is intentionally absent here.
+
+:8080 {
+	# Internal team tool — never index. Applies to every response.
+	header X-Robots-Tag "noindex, nofollow"
+
+	# API + MCP endpoint + OAuth AS endpoints (SDK mounts these at the app root).
+	handle /mcp* {
+		reverse_proxy {$BOARD_API_UPSTREAM}
+	}
+	handle /authorize* {
+		reverse_proxy {$BOARD_API_UPSTREAM}
+	}
+	handle /token* {
+		reverse_proxy {$BOARD_API_UPSTREAM}
+	}
+	handle /register* {
+		reverse_proxy {$BOARD_API_UPSTREAM}
+	}
+	handle /.well-known/oauth-* {
+		reverse_proxy {$BOARD_API_UPSTREAM}
+	}
+	handle /api/* {
+		reverse_proxy {$BOARD_API_UPSTREAM}
+	}
+
+	# Content-hashed bundles never change for a given name → cache hard.
+	handle /assets/* {
+		import content-security-policy.caddy
+		root * /srv/spa
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+	# index.html names the current bundle → must always revalidate.
+	handle {
+		import content-security-policy.caddy
+		root * /srv/spa
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}
